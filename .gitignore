@@ -4,4 +4,5 @@
 
 *.class
 WebContent/build.txt
+/.idea/workspace.xml
 
