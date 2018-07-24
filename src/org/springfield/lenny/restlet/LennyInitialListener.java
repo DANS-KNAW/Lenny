@@ -40,7 +40,7 @@ public class LennyInitialListener implements ServletContextListener {
 	private AclCleaner cleaner;
 	
 	public void contextInitialized(ServletContextEvent event) {
-		System.out.println("Lenny: context created");
+		System.out.println("LENNY: context created");
 		
 		ServletContext servletContext = event.getServletContext();
 		
@@ -58,6 +58,6 @@ public class LennyInitialListener implements ServletContextListener {
 		
 		cleaner.stop();
 		
-		System.out.println("Lenny: context destroyed");
+		System.out.println("LENNY: context destroyed");
 	}
 }

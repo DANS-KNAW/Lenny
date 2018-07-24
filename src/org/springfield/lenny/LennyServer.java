@@ -121,7 +121,7 @@ public class LennyServer {
 	 * Loads configuration file.
 	 */
 	private void initConfigurationXML() {
-		System.out.println("Initializing configuration file.");
+		System.out.println("LENNY: Initializing configuration file.");
 		
 		// configuration file
 		configuration = new Properties();
