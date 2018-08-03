@@ -235,7 +235,6 @@ public class LennyResource extends ServerResource {
 	 */
 	private String getRequestUri() {
 		 // get uri
-		System.out.println(getRequest().getResourceRef().getPath());
         String reqUri = getRequest().getResourceRef().getPath();
         reqUri = reqUri.substring(reqUri.indexOf("/",1));
         if(reqUri.endsWith("/")) {
