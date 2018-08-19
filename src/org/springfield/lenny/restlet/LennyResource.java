@@ -145,8 +145,8 @@ public class LennyResource extends ServerResource {
 				xml = representation.getText();
 			}
 		} catch (IOException e2) {
-			e2.printStackTrace();
-			return;
+					logger.warn("Eating exception and continuing", e2);
+					return;
 		}
         
         if (uri.startsWith(TICKET_ACCESS_URI)) {
@@ -185,7 +185,7 @@ public class LennyResource extends ServerResource {
 				xml = representation.getText();
 			}
 		} catch (IOException e2) {
-			e2.printStackTrace();
+      logger.warn("Eating exception and continuing", e2);
 			return;
 		}
         
@@ -267,8 +267,7 @@ public class LennyResource extends ServerResource {
 			expiry = doc.selectSingleNode("/fsxml/properties/expiry") == null ? 0L : Long.parseLong(doc.selectSingleNode("/fsxml/properties/expiry").getText());
 			maxRequests = doc.selectSingleNode("/fsxml/properties/maxRequests") == null ? Integer.MAX_VALUE : Integer.parseInt(doc.selectSingleNode("/fsxml/properties/maxRequests").getText());
 		} catch (Exception e) {
-			e.printStackTrace();
-			logger.error("error "+e.getMessage());
+			logger.error("error "+e.getMessage(), e);
 			r = new Pair<Status, String>(Status.CLIENT_ERROR_BAD_REQUEST, property2fsxml("status", "Bad request"));
 
 			return r;
@@ -456,8 +455,7 @@ public class LennyResource extends ServerResource {
 			Document doc = DocumentHelper.parseText(fsxml);
 			mediaUri = doc.selectSingleNode("/fsxml/properties/uri") == null ? "" : doc.selectSingleNode("/fsxml/properties/uri").getText();
 		} catch (Exception e) {
-			e.printStackTrace();
-			logger.error("error "+e.getMessage());
+			logger.error("error "+e.getMessage(), e);
 			r = new Pair<Status,String>(Status.CLIENT_ERROR_BAD_REQUEST, property2fsxml("status", "Bad request"));
 			return r;
 		}

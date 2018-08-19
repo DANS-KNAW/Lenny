@@ -40,8 +40,6 @@ public class LennyInitialListener implements ServletContextListener {
 	private AclCleaner cleaner;
 	
 	public void contextInitialized(ServletContextEvent event) {
-		System.out.println("LENNY: context created");
-		
 		ServletContext servletContext = event.getServletContext();
 		
 		//load LazyHomer		
@@ -54,10 +52,8 @@ public class LennyInitialListener implements ServletContextListener {
 	
 	public void contextDestroyed(ServletContextEvent event) {
 		//destroy LazyHomer
-		LazyHomer.destroy();		
+		LazyHomer.destroy();
 		
 		cleaner.stop();
-		
-		System.out.println("LENNY: context destroyed");
 	}
 }
