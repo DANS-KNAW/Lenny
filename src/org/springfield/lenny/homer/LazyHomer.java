@@ -64,6 +64,7 @@ public class LazyHomer implements MargeObserver {
 	private static Map<String, SmithersProperties> smithers = new HashMap<String, SmithersProperties>();
 	private static Map<String, LennyProperties> lennies = new HashMap<String, LennyProperties>();
 	private static LazyHomer ins;
+	private static String apiKey;
 
 	private int retryCounter;
 	
@@ -147,7 +148,11 @@ public class LazyHomer implements MargeObserver {
 			//getDifferentSmithers();
 		}
 	}
-	
+
+	public static LennyProperties getMyLennyProperties() {
+		return lennies.get(myip);
+	}
+
 	private Boolean checkKnown() {
 		String xml = "<fsxml><properties><depth>1</depth></properties></fsxml>";
 		ServiceInterface smithers = ServiceManager.getService("smithers");
