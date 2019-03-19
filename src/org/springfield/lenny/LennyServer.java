@@ -128,7 +128,9 @@ public class LennyServer {
 		configuration = new Properties();
 
 		LennyProperties mp = LazyHomer.getMyLennyProperties();
+		LOG.info("Lenny properties = " + mp);
 		if (mp!=null) {
+			LOG.debug("Putting apiKey = " + mp.getApiKey());
 			configuration.put("apiKey", mp.getApiKey());
 		} else {
 			System.out.println("Loading from configuration failed.");
