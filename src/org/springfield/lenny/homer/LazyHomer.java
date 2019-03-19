@@ -184,6 +184,7 @@ public class LazyHomer implements MargeObserver {
 					mp.setStatus(status);					
 					mp.setDefaultLogLevel(child.selectSingleNode("properties/defaultloglevel").getText());
 					mp.setPreferedSmithers(child.selectSingleNode("properties/preferedsmithers").getText());
+					mp.setApiKey(apiKey);
 					
 					if (ipnumber.equals(myip)) {
 						foundmynode = true;
@@ -271,6 +272,7 @@ public class LazyHomer implements MargeObserver {
 		role = props.getProperty("role");
 		if (role==null) role = "production";
 		LOG.info("LENNY: SERVER ROLE="+role);
+		apiKey = props.getProperty("apiKey", "");
 	}
 	
 	public static String getRole() {
