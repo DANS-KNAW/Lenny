@@ -64,6 +64,7 @@ public class LazyHomer implements MargeObserver {
 	private static Map<String, SmithersProperties> smithers = new HashMap<String, SmithersProperties>();
 	private static Map<String, LennyProperties> lennies = new HashMap<String, LennyProperties>();
 	private static LazyHomer ins;
+	private static String apiKey;
 
 	private int retryCounter;
 	
@@ -147,7 +148,11 @@ public class LazyHomer implements MargeObserver {
 			//getDifferentSmithers();
 		}
 	}
-	
+
+	public static LennyProperties getMyLennyProperties() {
+		return lennies.get(myip);
+	}
+
 	private Boolean checkKnown() {
 		String xml = "<fsxml><properties><depth>1</depth></properties></fsxml>";
 		ServiceInterface smithers = ServiceManager.getService("smithers");
@@ -179,6 +184,7 @@ public class LazyHomer implements MargeObserver {
 					mp.setStatus(status);					
 					mp.setDefaultLogLevel(child.selectSingleNode("properties/defaultloglevel").getText());
 					mp.setPreferedSmithers(child.selectSingleNode("properties/preferedsmithers").getText());
+					mp.setApiKey(apiKey);
 					
 					if (ipnumber.equals(myip)) {
 						foundmynode = true;
@@ -266,6 +272,7 @@ public class LazyHomer implements MargeObserver {
 		role = props.getProperty("role");
 		if (role==null) role = "production";
 		LOG.info("LENNY: SERVER ROLE="+role);
+		apiKey = props.getProperty("apiKey", "");
 	}
 	
 	public static String getRole() {

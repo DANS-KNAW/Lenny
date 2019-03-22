@@ -23,7 +23,8 @@ package org.springfield.lenny;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
-
+import org.springfield.lenny.homer.LazyHomer;
+import org.springfield.lenny.homer.LennyProperties;
 
 /**
  * Main momar class
@@ -125,7 +126,15 @@ public class LennyServer {
 		
 		// configuration file
 		configuration = new Properties();
-		
+
+		LennyProperties mp = LazyHomer.getMyLennyProperties();
+		LOG.info("Lenny properties = " + mp);
+		if (mp!=null) {
+			LOG.debug("Putting apiKey = " + mp.getApiKey());
+			configuration.put("apiKey", mp.getApiKey());
+		} else {
+			System.out.println("Loading from configuration failed.");
+		}
 	}
 
     /**

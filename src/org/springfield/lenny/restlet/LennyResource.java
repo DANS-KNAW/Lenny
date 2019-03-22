@@ -20,16 +20,6 @@
 */
 package org.springfield.lenny.restlet;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.log4j.Logger;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
@@ -40,6 +30,7 @@ import org.restlet.Request;
 import org.restlet.Response;
 import org.restlet.data.MediaType;
 import org.restlet.data.Status;
+import org.restlet.engine.header.Header;
 import org.restlet.representation.Representation;
 import org.restlet.representation.Variant;
 import org.restlet.resource.Delete;
@@ -47,11 +38,23 @@ import org.restlet.resource.Get;
 import org.restlet.resource.Post;
 import org.restlet.resource.Put;
 import org.restlet.resource.ServerResource;
+import org.restlet.util.Series;
+import org.springfield.lenny.LennyServer;
 import org.springfield.lenny.conditionalaccess.AccessList;
 import org.springfield.lenny.conditionalaccess.AccessListEntry;
 import org.springfield.lenny.restlet.util.Pair;
 import org.springfield.mojo.interfaces.ServiceInterface;
 import org.springfield.mojo.interfaces.ServiceManager;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * LennyResource.java
@@ -70,7 +73,15 @@ public class LennyResource extends ServerResource {
 	
 	private static AccessList accesslist;
 	private List<InetAddress> whitelist = new ArrayList<InetAddress>();
-	
+
+	/** api key */
+	private static String apiKey;
+
+	// load static variables for the configuration
+	static {
+		apiKey = LennyServer.instance().getConfiguration().getProperty("apiKey");
+	}
+
 	public LennyResource() {
 		//constructor
 		this.whitelist = whitelist;
@@ -103,129 +114,157 @@ public class LennyResource extends ServerResource {
         Status status;
         String responseBody;
         MediaType mediatype = MediaType.TEXT_HTML;
-        
-        if (uri.equals(TICKET_URI)) {
-			Pair<Status, String> response = showList();
-			status = response.status;
-			responseBody = response.response;			
-		} else if (uri.startsWith(TICKET_URI)) {
-			Pair<Status, String> response = getTicket(uri);
-			status = response.status;
-			responseBody = response.response;
-			mediatype = MediaType.TEXT_XML;
+
+		if(!isAuthorized()) {
+			status = Status.CLIENT_ERROR_FORBIDDEN;
+			responseBody = "403 - Not authorized";
 		} else {
-			status = Status.CLIENT_ERROR_NOT_FOUND; 
-			responseBody = "404 - Not found";
+			if (uri.equals(TICKET_URI)) {
+				Pair<Status, String> response = showList();
+				status = response.status;
+				responseBody = response.response;
+			} else if (uri.startsWith(TICKET_URI)) {
+				Pair<Status, String> response = getTicket(uri);
+				status = response.status;
+				responseBody = response.response;
+				mediatype = MediaType.TEXT_XML;
+			} else {
+				status = Status.CLIENT_ERROR_NOT_FOUND;
+				responseBody = "404 - Not found";
+			}
 		}
 
         getResponse().setStatus(status);
 		getResponse().setEntity(responseBody, mediatype);
 	}
-	
+
 	/**
 	 * PUT
 	 */
 	@Put("xml")
 	public void handlePut(Representation representation) {
 		// get request uri
-        String uri = getRequestUri();
-		
-        Status status;
-        String responseBody;
-        MediaType mediatype = MediaType.TEXT_HTML;
-        
-        String xml = "";
-        
-        try {
-			if (representation == null) {
-				getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-				getResponse().setEntity("<status>Error: the request data could not be read</status>",
-						MediaType.TEXT_XML);
-			} else {
-				xml = representation.getText();
-			}
-		} catch (IOException e2) {
-					logger.warn("Eating exception and continuing", e2);
-					return;
+		String uri = getRequestUri();
+
+		Status status;
+		String responseBody;
+		MediaType mediatype = MediaType.TEXT_HTML;
+
+		if (!isAuthorized()) {
+			status = Status.CLIENT_ERROR_FORBIDDEN;
+			responseBody = "403 - Not authorized";
 		}
-        
-        if (uri.startsWith(TICKET_ACCESS_URI)) {
-        	Pair<Status, String> response = getTicketHasAccess(uri, xml);
-        	status = response.status;
-        	responseBody = response.response;
-        } else {
-        	status = Status.CLIENT_ERROR_NOT_FOUND; 
-			responseBody = "404 - Not found";
-        }
-        
-        getResponse().setStatus(status);
+		else {
+			String xml = "";
+
+			try {
+				if (representation == null) {
+					getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+					getResponse().setEntity("<status>Error: the request data could not be read</status>", MediaType.TEXT_XML);
+				}
+				else {
+					xml = representation.getText();
+				}
+			}
+			catch (IOException e2) {
+				e2.printStackTrace();
+				return;
+			}
+
+			if (uri.startsWith(TICKET_ACCESS_URI)) {
+				Pair<Status, String> response = getTicketHasAccess(uri, xml);
+				status = response.status;
+				responseBody = response.response;
+			}
+			else {
+				status = Status.CLIENT_ERROR_NOT_FOUND;
+				responseBody = "404 - Not found";
+			}
+		}
+
+		getResponse().setStatus(status);
 		getResponse().setEntity(responseBody, mediatype);
 	}
-	
+
 	/**
 	 * POST
 	 */
 	@Post("xml")
 	public void handlePost(Representation representation) {
 		// get request uri
-        String uri = getRequestUri();
-        
-        Status status;
-        String responseBody;
-        MediaType mediatype = MediaType.TEXT_HTML;
-        
-        String xml = "";
-        
-        try {
-			if (representation == null) {
-				getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-				getResponse().setEntity("<status>Error: the request data could not be read</status>",
-						MediaType.TEXT_XML);
-			} else {
-				xml = representation.getText();
-			}
-		} catch (IOException e2) {
-      logger.warn("Eating exception and continuing", e2);
-			return;
+		String uri = getRequestUri();
+
+		Status status;
+		String responseBody;
+		MediaType mediatype = MediaType.TEXT_HTML;
+
+		if (!isAuthorized()) {
+			status = Status.CLIENT_ERROR_FORBIDDEN;
+			responseBody = "403 - Not authorized";
 		}
-        
-        if (uri.equals(TICKET_URI)) {
-        	Pair<Status, String> response = addTicket(xml);
-        	status = response.status;
-        	responseBody = response.response;
-        	mediatype = MediaType.TEXT_XML;
-        } else {
-        	status = Status.CLIENT_ERROR_NOT_FOUND; 
-			responseBody = "404 - Not found";
-        }
-		
-        getResponse().setStatus(status);
+		else {
+			String xml = "";
+
+			try {
+				if (representation == null) {
+					getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+					getResponse().setEntity("<status>Error: the request data could not be read</status>", MediaType.TEXT_XML);
+				}
+				else {
+					xml = representation.getText();
+				}
+			}
+			catch (IOException e2) {
+				e2.printStackTrace();
+				return;
+			}
+
+			if (uri.equals(TICKET_URI)) {
+				Pair<Status, String> response = addTicket(xml);
+				status = response.status;
+				responseBody = response.response;
+				mediatype = MediaType.TEXT_XML;
+			}
+			else {
+				status = Status.CLIENT_ERROR_NOT_FOUND;
+				responseBody = "404 - Not found";
+			}
+		}
+
+		getResponse().setStatus(status);
 		getResponse().setEntity(responseBody, mediatype);
 	}
-	
+
 	/**
 	 * DELETE
 	 */
 	@Delete
 	public void handleDelete() {
 		// get request uri
-        String uri = getRequestUri();
-		
-        Status status;
-        String responseBody;
-        MediaType mediatype = MediaType.TEXT_HTML;
-        
-        if (uri.startsWith(TICKET_URI)) {
-        	Pair<Status, String> response = deleteTicket(uri);
-        	status = response.status;
-        	responseBody = response.response;
-        	mediatype = MediaType.TEXT_XML;
-        } else {
-        	status = Status.CLIENT_ERROR_NOT_FOUND; 
-			responseBody = "404 - Not found";
-        }
-        
-        getResponse().setStatus(status);
+		String uri = getRequestUri();
+
+		Status status;
+		String responseBody;
+		MediaType mediatype = MediaType.TEXT_HTML;
+
+		if (!isAuthorized()) {
+			status = Status.CLIENT_ERROR_FORBIDDEN;
+			responseBody = "403 - Not authorized";
+		}
+		else {
+			if (uri.startsWith(TICKET_URI)) {
+				Pair<Status, String> response = deleteTicket(uri);
+				status = response.status;
+				responseBody = response.response;
+				mediatype = MediaType.TEXT_XML;
+			}
+			else {
+				status = Status.CLIENT_ERROR_NOT_FOUND;
+				responseBody = "404 - Not found";
+			}
+		}
+
+		getResponse().setStatus(status);
 		getResponse().setEntity(responseBody, mediatype);
 	}
 	
@@ -484,19 +523,30 @@ public class LennyResource extends ServerResource {
 		fsxml += "</properties></fsxml>";
 		return fsxml;
 	}
-	
-	/*private Document getNode(String uri) {
-		Document response = null;
-		
-		String responseStr = HttpHelper.sendRequest("GET", uri, null, null);
-		
-		try {	
-			response = DocumentHelper.parseText(responseStr);
-		} catch (DocumentException e) {
-			e.printStackTrace();
-			logger.error("could not create document from node "+uri+" - "+e.getMessage());
+
+	/*
+	 * Check if request is authorized when an api key is set
+	 */
+	private boolean isAuthorized() {
+		//no api key configured
+		if (apiKey.equals("")) {
+			logger.fatal("No API-Key configured");
+			return false;
 		}
-		return response;
-	}*/
-	
+
+		//check for x-api-key header
+		Series<Header> headers = (Series<Header>)getRequestAttributes().get("org.restlet.http.headers");
+		String requestHeaderApiKey = headers.getFirstValue("x-api-key", true);
+
+		//check for api_key parameter
+		String requestGetParamApiKey = getQueryValue("api_key");
+
+		if (requestHeaderApiKey != null && requestHeaderApiKey.equals(apiKey)) {
+			return true;
+		} else if (requestGetParamApiKey != null && requestGetParamApiKey.equals(apiKey)) {
+			return true;
+		}
+
+		return false;
+	}
 }
